@@ -1,0 +1,509 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+	<meta charset="UTF-8" />
+    <title>Phaser - Making your first game, part 9</title>
+    <script src="phaser.min.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+
+
+
+//globals
+var tileSprite;
+var jumpTimer = 0;
+var wall;
+var player;
+var platforms;
+var mP;
+var sky;
+var ledge;
+var ledge2;
+var cursors;
+
+var diam;
+var stars;
+var diamonds;
+var score = 0;
+var scoreText;
+
+var aruna;
+var keyW;
+var counter = 0;
+var starcount=12;
+var starsGroup;
+var diamGroup;
+var diam;
+
+function preload() {
+
+//    game.load.image('sky', 'assets/sky.png');
+    game.load.image('sky', 'assets/background.png');
+    game.load.image('ground', 'assets/ground.png');
+    game.load.image('star', 'assets/star.png');
+    game.load.image('diamonds', 'assets/diamond.png');
+    game.load.image('mp', 'assets/grass_1x1.png');
+    game.load.image('coin', 'assets/coin_icon.png');
+    game.load.image('sound', 'assets/speaker.png');
+    
+    game.load.image('beetle', 'assets/beetle.png');
+    game.load.image('beetle2', 'assets/beetle4.png');
+    
+    
+    game.load.spritesheet('dude', 'assets/dude.png', 32, 48);
+    
+    game.load.audio('bgm', ['audio/bgm.mp3', 'audio/bgm.ogg']);
+    game.load.audio('collect', 'audio/coin.wav');
+    
+
+}
+
+function diam(){
+
+//  Finally some stars to collect
+
+        if(!diamGroup){
+                diamGroup=game.add.group();
+                diamGroup.enableBody = true;                
+            }
+
+    //  Here we'll create 12 of them evenly spaced apart
+    for (var i = 0; i < 12; i++)
+    {
+        //  Create a star inside of the 'stars' group
+        var diam = diamGroup.create(i * 140, 0, 'diamonds');                  
+
+        //  Let gravity do its thing
+        diam.body.gravity.y = 300;
+
+        //  This just gives each star a slightly random bounce value
+        diam.body.bounce.y = 0.7 + Math.random() * 0.2;
+    }
+
+}
+
+
+function drawstar() {
+ 
+            //  Finally some stars to collect
+            if(!starsGroup){
+                starsGroup=game.add.group();
+                starsGroup.enableBody = true;                
+            }
+ 
+            //  We will enable physics for any star that is created in this group
+ 
+ 
+            //  Here we'll create 12 of them evenly spaced apart
+            for (var i = 0; i < 12; i++) {
+                //  Create a star inside of the 'stars' group
+                var star = starsGroup.create(i * 140, 0, 'diamonds');
+ 
+                //  Let gravity do its thing
+                star.body.gravity.y = 300;
+ 
+                //  This just gives each star a slightly random bounce value
+                star.body.bounce.y = 0.7 + Math.random() * 0.2;
+            }
+            return true;
+        }
+ 
+
+
+
+
+
+
+function create() {
+
+//  The score
+    text = game.add.text(16, 46, 'STAR', { fontSize: '32px', fill: '#000' });
+
+ 
+    bgm = game.add.audio('bgm');
+    bgm.loopFull();
+    
+    collected = game.add.audio('collect');
+
+    game.physics.startSystem(Phaser.Physics.ARCADE);	//  We're going to be using physics, so enable the Arcade Physics system
+
+    //  A simple background for our game
+    //sky=game.add.sprite(0, 0, 'sky');
+
+    tileSprite=game.add.tileSprite(0, 0, window.innerWidth, window.innerHeight, 'sky');
+    //tileSprite.autoScroll(-15,0);
+    
+    platforms = game.add.group();//  The platforms group contains the ground and the 2 ledges we can jump on
+
+    platforms.enableBody = true;//  We will enable physics for any object that is created in this group
+
+    var ground = platforms.create(0, game.world.height - 64, 'ground');// Here we create the ground.
+
+    //  Scale it to fit the width of the game (the original sprite is 400x32 in size)
+    ground.scale.setTo(2, 2);
+
+    //  This stops it from falling away when you jump on it
+    ground.body.immovable = true;
+
+    //  Now let's create two ledges
+    ledge = platforms.create(30, 350, 'mp');
+    ledge.body.immovable = true;
+    ledge.scale.setTo(1,1);
+    ledge.body.velocity.x=15;
+        
+
+    ledge2 = platforms.create(110, 250, 'ground');
+    ledge2.body.immovable = true;
+    ledge2.scale.setTo(0.5, 0.5);
+    
+    ledge2 = platforms.create(510, 350, 'ground');
+    ledge2.body.immovable = true;
+    ledge2.scale.setTo(0.5, 0.5);
+
+
+    ledge3 = platforms.create(210, 550, 'ground');
+    ledge3.body.immovable = true;
+    ledge3.scale.setTo(0.5, 0.5);
+    
+    ledge3 = platforms.create(410, 450, 'mp');
+    ledge3.body.immovable = true;
+    ledge3.scale.setTo(2.5, 1);
+
+    
+    
+    mP = game.add.sprite(20, 250, 'mp');
+    game.physics.arcade.enable(mP);
+    mP.enableBody=true;
+    mP.body.immovable = true;
+        
+    
+    //beetle=game.add.sprite(780, 340, 'beetle');
+    beetle2=game.add.sprite(960, 325, 'beetle2');
+    game.physics.arcade.enable(beetle2);
+    beetle2.enableBody=true;
+    //beetle2.body.velocity.x = -36;
+    beetle2.anchor.setTo(.5,.5);
+    beetle2.scale.x *= -1;   
+
+  
+    diamonds=game.add.sprite(750, 310, 'diamonds');
+    game.physics.arcade.enable(diamonds);
+    diamonds.enableBody=true;
+    diamonds.body.collideWorldBounds = true;
+    diamonds.body.immovable = true;
+    
+    
+    spkr = game.add.sprite(1000, 25, 'sound');
+    spkr.inputEnabled = true;
+    spkr.events.onInputDown.add(onoff, this);
+
+    
+    // The player and its settings
+    player = game.add.sprite(65, game.world.height - 850, 'dude');
+    
+    //  We need to enable physics on the player
+    game.physics.arcade.enable(player);
+
+    //  Player physics properties. Give the little guy a slight bounce.
+    player.body.bounce.y = 0.2;
+    player.body.gravity.y = 300;
+    player.body.collideWorldBounds = true;
+    player.body.setSize(30, 30, 0, 15);
+
+    //  Our two animations, walking left and right.
+    player.animations.add('left', [0, 1, 2, 3], 10, true);
+    player.animations.add('right', [5, 6, 7, 8], 10, true);
+
+    //  The score
+    scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' });
+     scoreText.inputEnabled = true;
+     //scoreText.events.onInputOver.add(diam, this);
+     scoreText.events.onInputOver.add(createstars, this);
+
+
+
+    //  Our controls.
+    cursors = game.input.keyboard.createCursorKeys();
+    
+}
+    //============================================================
+ /*   // Create 3 groups that will contain our objects
+walls = game.add.group();
+coins = game.add.group();
+enemies = game.add.group();
+
+game.physics.arcade.enable(walls);
+walls.enableBody=true;
+//walls.body.immovable = true; 
+
+// Design the level. x = wall, o = coin, ! = lava.
+var level = [
+    'xxxxxxxxxxxxxxxxxxxxxx',
+    '!         !          x',
+    '!                 o  x',
+    '!         o          x',
+    '!                     ',
+    '!                    x',
+    '!                    x',
+    '!                    x',
+    '!     o   !    x     x',
+    'xxxxxxxxxxxxxxxx!!!!!x',
+];
+
+//And to actually have the level displayed, add this just below the previous code.
+
+// Create the level by going through the array
+for (var i = 0; i < level.length; i++) {
+    for (var j = 0; j < level[i].length; j++) {
+
+        // Create a wall and add it to the 'walls' group
+        if (level[i][j] == 'x') {
+            wall = game.add.sprite(150+44*j, 44*i, 'mp');
+            walls.add(wall);
+            //game.physics.arcade.enable(wall);
+            //wall.enableBody=true;
+            wall.body.immovable = true; 
+        }
+
+        // Create a coin and add it to the 'coins' group
+        else if (level[i][j] == 'o') {
+            var coin = game.add.sprite(150+20*j, 150+20*i, 'coin');
+                      coins.add(coin);
+        //}
+
+        // Create a enemy and add it to the 'enemies' group
+        //else if (level[i][j] == '!') {
+          //  var enemy = game.add.sprite(30+20*j, 30+20*i, 'enemy');
+            //this.enemies.add(enemy);
+        }
+    }
+
+//================================================================
+    
+     
+    
+}}
+*/
+
+function createstars(player,diamonds){
+	
+	console.log("stars");
+	//diamonds.kill();
+	
+    //  Finally some stars to collect
+    stars = game.add.group();
+
+    //  We will enable physics for any star that is created in this group
+    stars.enableBody = true;
+
+    //  Here we'll create 12 of them evenly spaced apart
+    for (var i = 0; i < 12; i++)
+    {
+        //  Create a star inside of the 'stars' group
+        var star = stars.create(i * 140, 0, 'star');
+
+        //  Let gravity do its thing
+        star.body.gravity.y = 300;
+
+        //  This just gives each star a slightly random bounce value
+        star.body.bounce.y = 0.7 + Math.random() * 0.2;
+    }
+    
+    return true;
+}
+
+playing=true;
+function onoff(){
+	if(playing==true){		
+	bgm.stop();
+	playing=false;
+	}else{
+		bgm.play();
+		}}
+
+
+function update() {
+	
+	//sky.x += 0.75;
+
+    //  Collide the player and the stars with the platforms
+    var hitPlatform = game.physics.arcade.collide(player, platforms);
+    
+    game.physics.arcade.collide(stars, platforms);
+    game.physics.arcade.collide(diamonds, platforms);
+   // game.physics.arcade.collide(coin, platforms);
+    game.physics.arcade.collide(player, mP);
+    game.physics.arcade.collide(player, wall);
+    var check=game.physics.arcade.collide(player, diamonds);
+
+    if(check==false){beetle2.scale.x *= 1;  }
+    
+    if(check==true && counter === 0){
+	    beetle2.scale.x *= -1;   
+	    createstars();
+	    //diamonds.kill();
+    
+	    //tileSprite.autoScroll(-15,0);
+	    counter++; // prevent update from calling this 60 times 
+	    }
+       	    
+
+    //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
+    game.physics.arcade.overlap(player, stars, collectStar, null, this);
+    game.physics.arcade.overlap(player, diamonds, collectDiamond, null, this);
+    
+    //game.physics.arcade.overlap(player, diamonds, createstars, null, this);
+
+
+    // var dist = Phaser.Math.Distance.BetweenPoints(player, beetle2);
+
+
+    //  Reset the players velocity (movement)
+    player.body.velocity.x = 0;
+    
+    game.debug.text( "hitplatform: "+hitPlatform  /*+" Distance: "+dist */, 20, 50 );
+    game.debug.text( "check: "+check, 20, 70 );
+    game.debug.text( counter, 20, 90 );
+    game.debug.text( starcount, 20, 110 );
+    
+    //game.debug.body(player);
+    
+    
+    //game.debug.text( star.length(), 20, 110 );
+    /*game.debug.text( "Hit Platform: " +hitPlatform, 20, 90 );
+    game.debug.text( "Ground:   " + player.body.touching.down, 20, 110 );
+    game.debug.text( "Height: " + window.innerHeight + "  Width: "+ window.innerWidth +" Game World Height: "+game.world.height, 20, 130 );
+    game.debug.text( "Player on Floor: " + player.body.onFloor(), 20, 150 );
+    game.debug.text( "Jump Timer: " + jumpTimer, 20, 170 );
+    */
+    
+    
+    
+    if (cursors.left.isDown)
+    {
+        //  Move to the left
+        player.body.velocity.x = -150;
+
+        player.animations.play('left');
+        //ledge.body.velocity.x=-25;
+    }
+    
+    else if (cursors.right.isDown)
+    {
+        //  Move to the right
+        player.body.velocity.x = 150;
+
+        player.animations.play('right');
+        //ledge.body.velocity.x=25;
+        
+    }
+    else
+    {
+        //  Stand still
+        player.animations.stop();
+
+        player.frame = 4;
+        //ledge.body.velocity.x=0;
+        
+        
+        if (ledge.body.x >= 100)
+            {		
+                ledge.body.velocity.x = -36;
+                //beetle2.scale.x *= -1;   
+            }
+            else if (ledge.body.x <=10)
+            {				
+                ledge.body.velocity.x = 36;
+                //beetle2.scale.x *= 1;   
+            }
+                  
+          /*
+        if (beetle2.body.x <= 480)
+            {
+                beetle2.scale.x *= 1;    // Invert scale.x to flip left/right
+                beetle2.body.velocity.x = 36;
+            }
+            else if (beetle2.body.x >=925)
+            {
+		beetle2.scale.x *= -1; // Invert scale.x to flip left/right
+                beetle2.body.velocity.x = 36;
+            }   
+            */    
+         
+            
+        
+        //game.debug.text( ledge.body.x, 100, 380 );
+    }
+    
+/*    //  Allow the player to jump if they are touching the ground.
+    if (cursors.up.isDown && player.body.touching.down && hitPlatform)
+    {
+        player.body.velocity.y = -350;
+    }
+*/
+
+
+//if (spacebar.isDown) {
+if (cursors.up.isDown /*&& player.body.touching.down && hitPlatform*/){
+        
+        if (player.body.touching.down && jumpTimer === 0) {
+            // jump is allowed to start
+            jumpTimer = 1;
+            player.body.velocity.y = -350;
+	
+        } else if (jumpTimer > 0 && jumpTimer < 30) {
+            // keep jumping higher
+            jumpTimer++;
+            player.body.velocity.y = -350 + (jumpTimer * 7);
+        
+        } else {
+        // jump button not being pressed, reset jump timer
+        jumpTimer = 0;
+    }
+}
+}
+
+function collectStar (player, star) {
+    
+    // Removes the star from the screen
+    star.kill();
+    collected.play();
+    starcount=starcount-1;
+    
+    game.debug.text( starcount, 20, 110 );
+    
+    if (starcount==0){
+	    //drawstar();
+	    diam();
+	    }
+
+    //  Add and update the score
+    score += 10;
+    scoreText.text = 'Score: ' + score;
+
+}
+
+function collectDiamond (player, diamond) {
+    
+    // Removes the star from the screen
+    diamond.kill();
+
+    //  Add and update the score
+    score += 100;
+    scoreText.text = 'Score: ' + score;
+
+}
+
+</script>
+
+</body>
+</html>
